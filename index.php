@@ -69,11 +69,18 @@ $newsletter = new Newsletter();//... TODO
 
 // Создаем объект "Список пользователей"
 $userrepository = new UserRepository();
-
 $testUser = $userrepository->getUsers();
+
+// Цыклом проверяем кому отправлять сообщения и отправляем сообщения
 foreach ($testUser as $key => $value) {
-	if(isset($value['email']) && isset($value['name'])) {
-		echo 'Email ' . $value['email'] . 'has been sent to user ' . $value['name'] . '</br>';
-	}
-	
+	if(isset($value['email']) && //Существует ли email
+		filter_var($value['email'], FILTER_VALIDATE_EMAIL) && // Проверка на валидность email
+		isset($value['name'])) // Существует ли name
+		  { 
+		echo 'Email ' . $value['email'] . ' has been sent to user ' . $value['name'] . '</br>';
+	} 
 }
+
+
+// Валидация строки с использованием регулярного выражения PHP - google search
+// http://www.skillz.ru/dev/php/article-Regulyarnye_vyrazheniya_dlya_chaynikov.html
