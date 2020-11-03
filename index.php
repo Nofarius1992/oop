@@ -7,20 +7,61 @@
     За отправку пуш нотификации: "Push notification has been sent to user {name} with device_id {device_id}"
     
     Так же необходимо реализовать функциональность для валидации имейлов/пушей:
-    1) Нельзя отправлять письма юзерам с невалидными имейлами
+    1) Нельзя отправлять письма юзерам с невалидными имейлами - done
     2) Нельзя отправлять пуши юзерам с невалидными device_id. Правила валидации можете придумать сами.
-    3) Ничего не отправляем юзерам у которых нет имен
+    3) Ничего не отправляем юзерам у которых нет имен - done
     4) На одно и то же мыло/device_id - можно отправить письмо/пуш только один раз
     
     Для обеспечения возможности масштабирования системы (добавление новых типов отправок и новых валидаторов), 
     можно добавлять и использовать новые классы и другие языковые конструкции php в любом количестве. 
     Реализация должна соответствовать принципам ООП
-*/ 
+*/
+
+class Validator {
+    public function email(string $email) {
+        return filter_var($email, FILTER_VALIDATE_EMAIL);
+    }
+
+    public function deviceId(string $deviceId) {
+        return $deviceId !== '' && preg_match("/[0-9]/",$deviceId) == 0;
+    }
+}
 class Newsletter
 {
-    public function send(): void
+    private $validator;
+    public function __construct()
     {
-        
+        $this->validator = new Validator();
+    }
+
+    public function send($testUser): void
+    {
+        $pushedEmails = [];
+        $pushedDeviceIds = [];
+        foreach ($testUser as $key => $value) {
+
+            if(isset($value['name']) && $value['name'] !== '') {
+                if($this->validator->email((string)($value['email'] ?? ''))
+                    && !in_array($value['email'], $pushedEmails)) {
+                    $pushedEmails[] = $value['email'];
+                    echo sprintf(
+                        '<p>Email %s has been sent to user %s</p>',
+                        $value['email'],
+                        $value['name']
+                    );
+                }
+
+                if($this->validator->deviceId((string)($value['device_id'] ?? ''))
+                    && !in_array($value['device_id'], $pushedDeviceIds)) {
+                    $pushedDeviceIds[] = $value['device_id'];
+                    echo sprintf(
+                        '<p>Push notification has been sent to user %s with device_id %s</p>',
+                        $value['name'],
+                        $value['device_id']
+                    );
+                }
+            }
+        }
     }
 }
 
@@ -30,9 +71,14 @@ class UserRepository
     {
         return [
             [
+                'name' => 'abc',
+                'email' => 'ivan@test.com',
+                'device_id' => 'Ks[2dqweer'
+            ],
+            [
                 'name' => 'Ivan',
                 'email' => 'ivan@test.com',
-                'device_id' => 'Ks[dqweer4'
+                'device_id' => 'Ks[dqweer'
             ],
             [
                 'name' => 'Peter',
@@ -40,7 +86,7 @@ class UserRepository
             ],
             [
                 'name' => 'Mark',
-                'device_id' => 'Ks[dqweer4'
+                'device_id' => 'Ks[dqweer'
             ],
             [
                 'name' => 'Nina',
@@ -48,7 +94,7 @@ class UserRepository
             ],
             [
                 'name' => 'Luke',
-                'device_id' => 'vfehlfg43g'
+                'device_id' => 'vfehlfgg'
             ],
             [
                'name' => 'Zerg',
@@ -61,26 +107,8 @@ class UserRepository
         ];    
     }
 }
-
-
 // Тут релизовать получение объекта(ов) рассылки Newsletter и вызов(ы) метода send()
-$newsletter = new Newsletter();//... TODO
-// $newsletter->send();
-
-// Создаем объект "Список пользователей"
-$userrepository = new UserRepository();
-$testUser = $userrepository->getUsers();
-
-// Цыклом проверяем кому отправлять сообщения и отправляем сообщения
-foreach ($testUser as $key => $value) {
-	if(isset($value['email']) && //Существует ли email
-		filter_var($value['email'], FILTER_VALIDATE_EMAIL) && // Проверка на валидность email
-		isset($value['name'])) // Существует ли name
-		  { 
-		echo 'Email ' . $value['email'] . ' has been sent to user ' . $value['name'] . '</br>';
-	} 
-}
-
-
-// Валидация строки с использованием регулярного выражения PHP - google search
-// http://www.skillz.ru/dev/php/article-Regulyarnye_vyrazheniya_dlya_chaynikov.html
+$newsLetter = new Newsletter();
+$userRepository = new UserRepository();
+$testUser = $userRepository->getUsers();
+$newsLetter->send($testUser);
